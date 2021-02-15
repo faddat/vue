@@ -1,4 +1,5 @@
-import { Type, Field } from 'protobufjs'
+import blog from 'dao_modules/foo/bar/blog'
+
 const getDefaultState = () => {
 	return {
 		_Structure: {
@@ -90,14 +91,11 @@ export default {
 			commit('UNSUBSCRIBE', subscription)
 		},
 		async QueryPost({ commit, rootGetters }, { id, subscribe = false }) {
-			const queryUrl = '/foo/bar/blog/post'
-			const queryParams = '/' + id
 			try {
-				const post = await rootGetters['chain/common/env/apiClient'].query(
-					queryUrl,
-					queryParams
-				)
-				commit('POST', { queryParams, post })
+				const post = await blog
+					.QueryClient(rootGetters['chain/common/env/apiClient'])
+					.queryPost(id)
+				commit('POST', { id, post })
 				if (subscribe) {
 					commit('SUBSCRIBE', {
 						action: 'QueryPost',
@@ -110,14 +108,11 @@ export default {
 		},
 
 		async QueryPostAll({ commit, rootGetters }, { subscribe = false }) {
-			const queryUrl = '/foo/bar/blog/post'
-			const queryParams = ''
 			try {
-				const post = await rootGetters['chain/common/env/apiClient'].query(
-					queryUrl,
-					queryParams
-				)
-				commit('POST_ALL', { queryParams, post })
+				const post = await blog
+					.QueryClient(rootGetters['chain/common/env/apiClient'])
+					.queryPostAll()
+				commit('POST_ALL', { post })
 				if (subscribe) {
 					commit('SUBSCRIBE', {
 						action: 'QueryPostAll',
@@ -129,60 +124,34 @@ export default {
 			}
 		},
 		registerTypes({ dispatch }) {
-			const MsgCreatePost = new Type('MsgCreatePost')
-				.add(new Field('creator', 1, 'string'))
-				.add(new Field('title', 2, 'string'))
-				.add(new Field('body', 3, 'string'))
-				.add(new Field('votes', 4, 'int32'))
-
 			dispatch(
 				'chain/common/wallet/registerType',
 				{
 					typeUrl: '/foo.bar.blog.MsgCreatePost',
-					type: MsgCreatePost
+					type: blog.MsgCreatePost
 				},
 				{ root: true }
 			)
-
-			const MsgUpdatePost = new Type('MsgUpdatePost')
-				.add(new Field('creator', 1, 'string'))
-				.add(new Field('id', 2, 'string'))
-				.add(new Field('title', 3, 'string'))
-				.add(new Field('body', 4, 'string'))
-				.add(new Field('votes', 5, 'int32'))
 
 			dispatch(
 				'chain/common/wallet/registerType',
 				{
 					typeUrl: '/foo.bar.blog.MsgUpdatePost',
-					type: MsgUpdatePost
+					type: blog.MsgUpdatePost
 				},
 				{ root: true }
 			)
-			const MsgDeletePost = new Type('MsgDeletePost')
-				.add(new Field('creator', 1, 'string'))
-				.add(new Field('id', 2, 'string'))
-
 			dispatch(
 				'chain/common/wallet/registerType',
 				{
 					typeUrl: '/foo.bar.blog.MsgDeletePost',
-					type: MsgDeletePost
+					type: blog.MsgDeletePost
 				},
 				{ root: true }
 			)
 		},
-		async MsgCreatePost(
-			{ dispatch },
-			{ creator, title, body, votes, memo, denom }
-		) {
+		async MsgCreatePost({ dispatch }, { value, memo, denom }) {
 			const typeUrl = '/foo.bar.blog.MsgCreatePost'
-			const value = {
-				creator,
-				title,
-				body,
-				votes
-			}
 			try {
 				await dispatch(
 					'chain/common/wallet/sendTransaction',
@@ -197,18 +166,9 @@ export default {
 				throw 'Failed to broadcast transaction' + e
 			}
 		},
-		async MsgUpdatePost(
-			{ dispatch },
-			{ creator, id, title, body, votes, memo, denom }
-		) {
+		async MsgUpdatePost({ dispatch }, { value, memo, denom }) {
 			const typeUrl = '/foo.bar.blog.MsgUpdatePost'
-			const value = {
-				creator,
-				id,
-				title,
-				body,
-				votes
-			}
+
 			try {
 				await dispatch(
 					'chain/common/wallet/sendTransaction',
@@ -223,12 +183,8 @@ export default {
 				throw 'Failed to broadcast transaction'
 			}
 		},
-		async MsgDeletePost({ dispatch }, { creator, id, memo, denom }) {
+		async MsgDeletePost({ dispatch }, { value, memo, denom }) {
 			const typeUrl = '/foo.bar.blog.MsgDeletePost'
-			const value = {
-				creator,
-				id
-			}
 			try {
 				await dispatch(
 					'chain/common/wallet/sendTransaction',
